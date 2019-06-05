@@ -1,0 +1,9 @@
+---
+- name: clone the streamaert repo
+  hosts: localhost
+  tasks:
+  - name: clone repo
+    git:
+      dest: ./StreamAlert
+      repo: https://github.com/airbnb/streamalert.git
+      version: stable

@@ -1,0 +1,23 @@
+all:
+  vars:
+    ansible_connection: local
+  children:
+    groupA:
+      hosts:
+        host1:
+        host2:
+        host3:
+    groupB:
+      hosts:
+        host4:
+        host5:
+        host6:
+    web:
+      hosts:
+        host1:
+        host2:
+        host3:
+    lb:
+      hosts:
+        lb1:
+        lb2:

@@ -1,0 +1,13 @@
+---
+- name: "Template the Rules"
+  hosts: localhost
+  vars_files:
+  - output.test.yaml
+  tasks:
+
+  - name: "here we go"
+    template:
+      src: "{{ item }}"
+      dest: rules.folder/ {{ item | basename | regex_replace('.j2','') }}
+    with_fileglob:
+      - streamalert.templates/*.j2
