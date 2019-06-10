@@ -3,7 +3,13 @@
   hosts: localhost
   vars_files:
   - output.test.yaml
+  
   tasks:
+  - name: clone streamalert repo
+    git:
+      dest: ./streamalert
+      repo: https://github.com/airbnb/streamalert.git
+      version: stable
 
   - name: "here we go"
     template:
@@ -12,8 +18,3 @@
     with_fileglob:
       - streamalert.templates/*.j2
 
-  - name: clone repo
-    git:
-      dest: ./StreamAlert
-      repo: https://github.com/airbnb/streamalert.git
-      version: stable

@@ -1,0 +1,21 @@
+Things I'm doing differently form the getting started guide:
+
+./manage.py configure prefix NAME #the name of the prefix can be setup to be the name of the client
+
+also, need to configure streamalert outputs and inputs. this isn't terribly hard to do. also need to configure inputs that are in there based on the rules, but that's all based on the rules.
+
+Prefix is a place of organization here. – can make multiple or less in order to create multpile prefixes to store the data. 
+
+one account have so many inputs
+
+git clone https://github.com/rhythmictech/streamalert-manager
+ansible-playbook streamalert.temptorule.yaml
+cd streamalert
+source venv/bin/activate
+aws configure (already done)
+./manage.py configure aws_account_id 743955215550
+./manage configure prefix demo
+./manage.py init
+
+aws s3 ls | grep demo
+
