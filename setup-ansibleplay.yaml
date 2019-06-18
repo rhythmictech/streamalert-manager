@@ -5,16 +5,16 @@
   - output.test.yaml
   
   tasks:
-  - name: clone streamalert repo
+  - name: Clone StreamAlert Repo
     git:
       dest: ./streamalert
       repo: https://github.com/airbnb/streamalert.git
       version: stable
 
-  - name: "here we go"
+  - name: Ensure rules have been tepmlated
     template:
       src: "{{ item }}"
-      dest: rules.folder/ {{ item | basename | regex_replace('.j2','') }}
+      dest: streamalert/rules/rhythmic/{{ item | basename | regex_replace('.j2','') }}
     with_fileglob:
       - streamalert.templates/*.j2
 
