@@ -30,3 +30,4 @@ venv/
 htmlcov/
 streamalert
 *.retry
+.vscode

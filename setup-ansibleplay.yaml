@@ -2,52 +2,53 @@
 - name: "Configure StreamAlert files"
   hosts: localhost
   vars_files:
-    - testVarFile.yaml
+    - defaults.yml
   tasks:
     - name: Clone StreamAlert Repo
       git:
-        dest: ./streamalert
+        dest: "{{ playbook_dir }}/streamalert"
         repo: https://github.com/airbnb/streamalert.git
         version: stable
-        force: yes
+        force: no
+        update: no
       tags:
         - clone
-    - name: Ensure rhythmic rules dir exists
-      file:
-        path: streamalert/rules/rhythmic
-        state: directory
-      tags:
-        - rules
-    - name: Ensure __init__.py exists in rules dir
-      file:
-        path: streamalert/rules/rhythmic/__init__.py
-        state: present
-      tags:
-        - rules
-    - name: Ensure rules have been templated
-      template:
-        src: "{{ item }}"
-        dest: streamalert/rules/rhythmic/{{ item | basename | regex_replace('.j2','') }}
-      with_fileglob:
-        - templates/rules/*.j2
-      tags:
-        - rules
 
-    - name: Ensure Config is set correctly
+    - name: Rules Block
+      tags:
+        - rules
+      block:
+        - name: Ensure rhythmic rules dir exists
+          file:
+            path: "{{ playbook_dir }}/streamalert/rules/rhythmic"
+            state: directory
+        - name: Ensure __init__.py exists in rules dir
+          file:
+            path: "{{ playbook_dir }}/streamalert/rules/rhythmic/__init__.py"
+            state: touch
+        - name: Ensure rules have been templated
+          template:
+            src: "{{ item }}"
+            dest: "{{ playbook_dir }}/streamalert/rules/rhythmic/{{ item | basename | regex_replace('.j2','') }}"
+          with_fileglob:
+            - templates/rules/*.j2
+
+    - name: Config Block
       tags:
         - config
       block:
-        - name: load config from file
-          slurp:
-            src: ./streamalert/conf/global.json
-          register: streamalert_global_raw
+        - name: Load config from file
+          include_vars:
+            file: streamalert/conf/global.json
+            name: streamalert_global_imported
         - name: Set vars
           set_fact:
-            streamalert_global_imported: "{{ streamalert_global_raw.content | b64decode | from_json }}"
             streamalert_global_mods:
               general:
                 rule_locations:
                   - rules/rhythmic
+              account:
+                aws_account_id: "{{ aws_account_id | quote}}"
         - name: Modify json
           set_fact:
             streamalert_global_result: "{{ streamalert_global_imported | combine(streamalert_global_mods, recursive=True) }}"
@@ -56,31 +57,40 @@
             content: "{{ streamalert_global_result | to_nice_json(indent=2) }}"
             dest: ./streamalert/conf/global.json
 
-    - name: Ensure Python requirements are installed
-      pip:
-        requirements: ./streamalert/requirements.txt
-        virtualenv: venv
-        virtualenv_python: python2.7
+    - name: Virtualenv Block
       tags:
         - dependencies
         - pip
         - virtualenv
+      block:
+        - name: Ensure Python requirements are installed
+          pip:
+            requirements: "{{ playbook_dir }}/streamalert/requirements.txt"
+            virtualenv: "{{ venv }}"
+            virtualenv_python: python2.7
+            virtualenv_site_packages: yes
+        - name: Ensure venv wrapper is present
+          template:
+            src: templates/venv_exec.j2
+            dest: "{{ venv }}/exec"
+            mode: "755"
 
 - name: Deploy Streamalert
   hosts: localhost
+  tags:
+    - deploy
   vars:
-    ansible_python_interpreter: venv/bin/python
-  defaults:
-    aws_account_id: 743955215550
-    environment: test
+    ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
+    environment_name: test
+  module_defaults:
+    command:
+      chdir: "{{ playbook_dir }}/streamalert"
+    shell:
+      chdir: "{{ playbook_dir }}/streamalert"
   tasks:
-    - command: "./manage.py configure aws_account_id {{ aws_account_id }}"
-      args:
-        chdir: streamalert
-    - command: "./manage.py configure prefix {{ environment }}"
-      args:
-        chdir: streamalert
+    - name: Configure bucket prefix
+      command: "./manage.py configure prefix {{ environment_name }}"
     - name: initialize
       shell: yes yes | ./manage.py init
-      args:
-        chdir: streamalert
+      tags:
+        - init
