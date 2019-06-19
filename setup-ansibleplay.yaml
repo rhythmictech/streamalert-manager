@@ -10,11 +10,18 @@
         dest: ./streamalert
         repo: https://github.com/airbnb/streamalert.git
         version: stable
+      tags:
+        - clone
 
-    - name: Create rhythmic file in rules
+    - name: Ensure rhythmic rules dir exists
       file:
         path: streamalert/rules/rhythmic
         state: directory
+
+    - name: Ensure __init__.py exists in rules dir
+      file:
+        path: streamalert/rules/rhythmic/__init__.py
+        state: present
 
     - name: Ensure rules have been templated
       template:
@@ -23,7 +30,7 @@
       with_fileglob:
         - templates/rules/*.j2
 
-    - name: Modify necessary configuration files if not in wanted condition
+    - name: Ensure files are modified to wanted configurations
       lineinfile:
         path: streamalert/conf/global.json
         regexp: "rules"
