@@ -10,6 +10,7 @@
         dest: ./streamalert
         repo: https://github.com/airbnb/streamalert.git
         version: stable
+        force: yes
       tags:
         - clone
 
@@ -30,11 +31,28 @@
       with_fileglob:
         - templates/rules/*.j2
 
-    - name: Ensure files are modified to wanted configurations
-      lineinfile:
-        path: streamalert/conf/global.json
-        regexp: "rules"
-        line: '      "rules/rhythmic"'
+    - name: Ensure Config is set correctly
+      tags:
+        - config
+      block:
+        - name: load config from file
+          slurp:
+            src: ./streamalert/conf/global.json
+          register: streamalert_global_raw
+        - name: Set vars
+          set_fact:
+            streamalert_global_imported: "{{ streamalert_global_raw.content | b64decode | from_json }}"
+            streamalert_global_mods:
+              general:
+                rule_locations:
+                  - rules/rhythmic
+        - name: Modify json
+          set_fact:
+            streamalert_global_result: "{{ streamalert_global_imported | combine(streamalert_global_mods, recursive=True) }}"
+        - name: Ensure conf file is written
+          copy:
+            content: "{{ streamalert_global_result | to_nice_json(indent=2) }}"
+            dest: ./streamalert/conf/global.json
 
     - command: ./manage.py configure aws_account_id 743955215550
       args:
