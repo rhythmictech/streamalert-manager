@@ -1,9 +1,8 @@
 ---
-- name: "Setup StreamAlert"
+- name: "Configure StreamAlert files"
   hosts: localhost
   vars_files:
     - testVarFile.yaml
-
   tasks:
     - name: Clone StreamAlert Repo
       git:
@@ -13,21 +12,18 @@
         force: yes
       tags:
         - clone
-
     - name: Ensure rhythmic rules dir exists
       file:
         path: streamalert/rules/rhythmic
         state: directory
       tags:
         - rules
-
     - name: Ensure __init__.py exists in rules dir
       file:
         path: streamalert/rules/rhythmic/__init__.py
         state: present
       tags:
         - rules
-
     - name: Ensure rules have been templated
       template:
         src: "{{ item }}"
@@ -60,13 +56,31 @@
             content: "{{ streamalert_global_result | to_nice_json(indent=2) }}"
             dest: ./streamalert/conf/global.json
 
-    - command: ./manage.py configure aws_account_id 743955215550
+    - name: Ensure Python requirements are installed
+      pip:
+        requirements: ./streamalert/requirements.txt
+        virtualenv: venv
+        virtualenv_python: python2.7
+      tags:
+        - dependencies
+        - pip
+        - virtualenv
+
+- name: Deploy Streamalert
+  hosts: localhost
+  vars:
+    ansible_python_interpreter: venv/bin/python
+  defaults:
+    aws_account_id: 743955215550
+    environment: test
+  tasks:
+    - command: "./manage.py configure aws_account_id {{ aws_account_id }}"
       args:
-        chdir: StreamAlert
-    - command: ./manage.py configure prefix auto
+        chdir: streamalert
+    - command: "./manage.py configure prefix {{ environment }}"
       args:
-        chdir: StreamAlert
+        chdir: streamalert
     - name: initialize
       shell: yes yes | ./manage.py init
       args:
-        chdir: StreamAlert
+        chdir: streamalert
