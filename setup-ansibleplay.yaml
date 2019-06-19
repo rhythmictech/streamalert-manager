@@ -2,42 +2,40 @@
 - name: "Setup StreamAlert"
   hosts: localhost
   vars_files:
-  - testVarFile.yaml
-  
+    - testVarFile.yaml
+
   tasks:
-  - name: Clone StreamAlert Repo
-    git:
-      dest: ./streamalert
-      repo: https://github.com/airbnb/streamalert.git
-      version: stable
-  
-  - name: Create rhythmic file in rules
-    file:
-      path: streamalert/rules/rhythmic
-      state: directory
+    - name: Clone StreamAlert Repo
+      git:
+        dest: ./streamalert
+        repo: https://github.com/airbnb/streamalert.git
+        version: stable
 
-  - name: Ensure rules have been templated
-    template:
-      src: "{{ item }}"
-      dest: streamalert/rules/rhythmic/{{ item | basename | regex_replace('.j2','') }}
-    with_fileglob:
-      - templates/rules/*.j2
+    - name: Create rhythmic file in rules
+      file:
+        path: streamalert/rules/rhythmic
+        state: directory
 
-  - name: Modify necessary configuration files if not in wanted condition
-    lineinfile:
-      path: streamalert/conf/global.json
-      regexp: "rules"
-      line: "      \"rules/rhythmic\""
+    - name: Ensure rules have been templated
+      template:
+        src: "{{ item }}"
+        dest: streamalert/rules/rhythmic/{{ item | basename | regex_replace('.j2','') }}
+      with_fileglob:
+        - templates/rules/*.j2
 
-  - command: ./manage.py configure aws_account_id 743955215550 
-    args: 
-      chdir: StreamAlert
-  - command: ./manage.py configure prefix auto 
-    args: 
-      chdir: StreamAlert
-  - name: initialize
-    shell: yes yes | ./manage.py init 
-    args: 
-     chdir: StreamAlert
- 
- 
+    - name: Modify necessary configuration files if not in wanted condition
+      lineinfile:
+        path: streamalert/conf/global.json
+        regexp: "rules"
+        line: '      "rules/rhythmic"'
+
+    - command: ./manage.py configure aws_account_id 743955215550
+      args:
+        chdir: StreamAlert
+    - command: ./manage.py configure prefix auto
+      args:
+        chdir: StreamAlert
+    - name: initialize
+      shell: yes yes | ./manage.py init
+      args:
+        chdir: StreamAlert
