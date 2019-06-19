@@ -18,11 +18,15 @@
       file:
         path: streamalert/rules/rhythmic
         state: directory
+      tags:
+        - rules
 
     - name: Ensure __init__.py exists in rules dir
       file:
         path: streamalert/rules/rhythmic/__init__.py
         state: present
+      tags:
+        - rules
 
     - name: Ensure rules have been templated
       template:
@@ -30,6 +34,8 @@
         dest: streamalert/rules/rhythmic/{{ item | basename | regex_replace('.j2','') }}
       with_fileglob:
         - templates/rules/*.j2
+      tags:
+        - rules
 
     - name: Ensure Config is set correctly
       tags:
