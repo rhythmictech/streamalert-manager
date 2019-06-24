@@ -3,6 +3,7 @@
   hosts: localhost
   vars_files:
     - defaults.yml
+    - global_conf_vars.yaml
   tasks:
     - name: Clone StreamAlert Repo
       git:
@@ -41,6 +42,7 @@
           include_vars:
             file: streamalert/conf/global.json
             name: streamalert_global_imported
+
         - name: Set vars
           set_fact:
             streamalert_global_mods:
@@ -49,13 +51,60 @@
                   - rules/rhythmic
               account:
                 aws_account_id: "{{ aws_account_id | quote}}"
+
         - name: Modify json
           set_fact:
             streamalert_global_result: "{{ streamalert_global_imported | combine(streamalert_global_mods, recursive=True) }}"
+
         - name: Ensure conf file is written
           copy:
             content: "{{ streamalert_global_result | to_nice_json(indent=2) }}"
             dest: ./streamalert/conf/global.json
+
+    - name: I/O Configuration
+      tags:
+        - input
+        - output
+
+      block:
+      - name: Ensure Input SNS Topic is Created
+        sns_topic:
+          name: "{{ sns_input_topic_name }}" 
+
+      - name: Load prod.json file
+        include_vars: 
+         file: streamalert/conf/clusters/prod.json
+         name: streamalert_prod_imported
+      
+      - name: Set vars
+        set_fact:
+          streamalert_prod_mods:
+            inputs:
+              - "arn:aws:sns:{{ region }}:{{ aws_account_id }}:{{sns_input_topic_name}}"
+      
+      - name: Modify json
+        set_fact:
+            streamalert_global_result: "{{ streamalert_prod_imported | combine(streamalert_prod_mods, recursive=True) }}"
+
+      - name: Load sources.json
+        include_vars: 
+         file: streamalert/conf/clusters/sources.json
+         name: streamalert_sources_imported
+      
+      - name: Set vars
+        vars: 
+          - topic: "{{ sns_input_topic_name }}"
+        set_fact:
+          streamalert_sources_mods:
+            sns:
+              topic:
+                logs:
+                - "cloudwatch"
+      
+      - name: Modify json
+        set_fact:
+            streamalert_global_result: "{{ streamalert_sources_imported | combine(streamalert_sources_mods, recursive=True) }}"    
+
 
     - name: Virtualenv Block
       tags:
@@ -90,6 +139,7 @@
   tasks:
     - name: Configure bucket prefix
       command: "./manage.py configure prefix {{ environment_name }}"
+
     - name: initialize
       shell: yes yes | ./manage.py init
       tags:

@@ -26,6 +26,7 @@ terminal.glue
 # virtualenv files
 venv/
 
+# other
 .vagrant/
 htmlcov/
 streamalert
