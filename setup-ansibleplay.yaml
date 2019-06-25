@@ -4,6 +4,7 @@
   vars_files:
     - defaults.yml
     - global_conf_vars.yaml
+
   tasks:
     - name: Clone StreamAlert Repo
       git:
@@ -61,51 +62,6 @@
             content: "{{ streamalert_global_result | to_nice_json(indent=2) }}"
             dest: ./streamalert/conf/global.json
 
-    - name: I/O Configuration
-      tags:
-        - input
-        - output
-
-      block:
-      - name: Ensure Input SNS Topic is Created
-        sns_topic:
-          name: "{{ sns_input_topic_name }}" 
-
-      - name: Load prod.json file
-        include_vars: 
-         file: streamalert/conf/clusters/prod.json
-         name: streamalert_prod_imported
-      
-      - name: Set vars
-        set_fact:
-          streamalert_prod_mods:
-            inputs:
-              - "arn:aws:sns:{{ region }}:{{ aws_account_id }}:{{sns_input_topic_name}}"
-      
-      - name: Modify json
-        set_fact:
-            streamalert_global_result: "{{ streamalert_prod_imported | combine(streamalert_prod_mods, recursive=True) }}"
-
-      - name: Load sources.json
-        include_vars: 
-         file: streamalert/conf/clusters/sources.json
-         name: streamalert_sources_imported
-      
-      - name: Set vars
-        vars: 
-          - topic: "{{ sns_input_topic_name }}"
-        set_fact:
-          streamalert_sources_mods:
-            sns:
-              topic:
-                logs:
-                - "cloudwatch"
-      
-      - name: Modify json
-        set_fact:
-            streamalert_global_result: "{{ streamalert_sources_imported | combine(streamalert_sources_mods, recursive=True) }}"    
-
-
     - name: Virtualenv Block
       tags:
         - dependencies
@@ -124,13 +80,68 @@
             dest: "{{ venv }}/exec"
             mode: "755"
 
+    - name: Ensure Input SNS Topic is Created
+      tags:
+      - buckets
+      vars:
+        ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
+      sns_topic:
+        name: "{{ sns_input_topic_name }}"
+        aws_access_key: "{{ access_key }}"
+        aws_secret_key: "{{ secret_key }}"
+        region: "{{ region }}"
+
+    - name: Input Configuration
+      tags:
+        - input
+      block:
+      - name: Load prod.json file
+        include_vars: 
+         file: streamalert/conf/clusters/prod.json
+         name: streamalert_prod_imported
+      - name: Set vars
+        set_fact:
+          streamalert_prod_mods:
+            inputs:
+              - "arn:aws:sns:{{ region }}:{{ aws_account_id }}:{{ sns_input_topic_name }}"
+      - name: Modify json
+        set_fact:
+          streamalert_prod_result: "{{ streamalert_prod_imported | combine(streamalert_prod_mods, recursive=True) }}"
+      - name: Ensure conf file is written
+        copy:
+          content: "{{ streamalert_prod_result | to_nice_json(indent=2) }}"
+          dest: ./streamalert/conf/prod.json      
+
+      - name: Load sources.json
+        include_vars: 
+         file: streamalert/conf/sources.json
+         name: streamalert_sources_imported
+      - name: Set vars
+        vars: 
+          - topic: "{{ sns_input_topic_name }}"
+        set_fact:
+          streamalert_sources_mods:
+            sns:
+              topic:
+                logs:
+                - "cloudwatch"
+      - name: Modify json
+        set_fact:
+          streamalert_sources_result: "{{ streamalert_sources_imported | combine(streamalert_sources_mods, recursive=True) }}"    
+      - name: Ensure conf file is written
+        copy:
+          content: "{{ streamalert_sources_result | to_nice_json(indent=2) }}"
+          dest: ./streamalert/conf/sources.json
+
+
+
 - name: Deploy Streamalert
   hosts: localhost
   tags:
     - deploy
   vars:
     ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
-    environment_name: test
+    environment_name: test1
   module_defaults:
     command:
       chdir: "{{ playbook_dir }}/streamalert"
