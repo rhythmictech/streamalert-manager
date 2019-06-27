@@ -4,6 +4,10 @@
   vars_files:
     - defaults.yml
     - global_conf_vars.yaml
+  vars_prompt:
+    - name: account_id
+      prompt: "Enter AWS Account ID:"
+      private: no
 
   tasks:
     - name: Clone StreamAlert Repo
@@ -130,8 +134,6 @@
         copy:
           content: "{{ streamalert_sources_result | to_nice_json(indent=2) }}"
           dest: ./streamalert/conf/sources.json
-
-
 
 - name: Deploy Streamalert
   hosts: localhost

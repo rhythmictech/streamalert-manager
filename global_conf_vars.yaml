@@ -1,0 +1,5 @@
+#required
+region: "us-east-1"
+
+#optional
+sns_input_topic_name: "ansible_test"
