@@ -58,7 +58,7 @@
                 rule_locations:
                   - rules/rhythmic
               account:
-                account_id: "{{ account_id | quote}}"
+                aws_account_id: "{{ account_id | quote}}"
 
         - name: Modify json
           set_fact:
