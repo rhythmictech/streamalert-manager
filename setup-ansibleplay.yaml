@@ -147,6 +147,8 @@
     ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
   vars_prompt:
     - name: environment_name
+      prompt: "Insert name for StreamAlert Prefix"
+      private: no
   module_defaults:
     command:
       chdir: "{{ playbook_dir }}/streamalert"
