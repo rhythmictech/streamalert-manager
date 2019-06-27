@@ -87,8 +87,6 @@
         ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
       sns_topic:
         name: "{{ sns_input_topic_name }}"
-        aws_access_key: "{{ access_key }}"
-        aws_secret_key: "{{ secret_key }}"
         region: "{{ region }}"
 
     - name: Input Configuration
@@ -155,3 +153,22 @@
       shell: yes yes | ./manage.py init
       tags:
         - init
+    
+- name: Configure Slack Output
+  hosts: localhost
+  tags:
+    - out
+  vars: 
+    ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
+  module_defaults:
+    command:
+      chdir: "{{ playbook_dir }}/streamalert"
+    shell:
+      chdir: "{{ playbook_dir }}/streamalert"
+  tasks:
+    - name: Use expect script to setup slack
+      command: "./output.exp"
+    - name: Build StreamAlert
+      command: yes yes | ./manage.py build
+    - name: Deploy StreamAlert
+      command: yes yes | ./mangage.py deploy --function all
