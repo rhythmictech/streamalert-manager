@@ -114,7 +114,7 @@
         set_fact:
           streamalert_prod_mods:
             inputs:
-              - "arn:aws:sns:{{ region }}:{{ account_idgit }}:{{ sns_input_topic_name }}"
+              - "arn:aws:sns:{{ region }}:{{ account_id }}:{{ sns_input_topic_name }}"
       - name: Modify json
         set_fact:
           streamalert_prod_result: "{{ streamalert_prod_imported | combine(streamalert_prod_mods, recursive=True) }}"
