@@ -8,6 +8,9 @@
     - name: account_id
       prompt: "Enter AWS Account ID:"
       private: no
+    - name: sns_input_topic_name
+      prompt: "Insert SNS Topic Name"
+      private: no
 
   tasks:
     - name: Clone StreamAlert Repo
@@ -78,6 +81,12 @@
             virtualenv: "{{ venv }}"
             virtualenv_python: python2.7
             virtualenv_site_packages: yes
+        - name: Ensure pexpect is in virtual environment
+          pip:
+            name: pexpect
+            virtualenv: "{{ venv }}"
+            virtualenv_python: python2.7
+
         - name: Ensure venv wrapper is present
           template:
             src: templates/venv_exec.j2
@@ -89,10 +98,6 @@
       - buckets
       vars:
         ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
-      vars_prompt:
-      - name: sns_input_topic_name
-        prompt: "Insert SNS Topic Name"
-        private: no
       sns_topic:
         name: "{{ sns_input_topic_name }}"
         region: "{{ region }}"
@@ -169,6 +174,10 @@
     - out
   vars: 
     ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
+  vars_prompt: 
+        - name: webhook
+          prompt: "Insert Slack webhook url (inluding the secret): "
+          private: no
   module_defaults:
     command:
       chdir: "{{ playbook_dir }}/streamalert"
@@ -176,7 +185,15 @@
       chdir: "{{ playbook_dir }}/streamalert"
   tasks:
     - name: Use expect script to setup slack
-      command: "./output.exp"
+      tags: 
+        - slack      
+      expect:
+        chdir: "{{ playbook_dir }}/streamalert"
+        command: "./manage.py output slack"
+        responses:
+          "Please supply a short and unique descriptor for this Slack integration" : "streamalert-testing1"
+          "Please supply the full Slack webhook url, including the secret: " : "{{ webhook }}"  
+      #command: "./output.exp"
     - name: Build StreamAlert
       command: yes yes | ./manage.py build
     - name: Deploy StreamAlert
