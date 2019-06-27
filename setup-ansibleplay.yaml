@@ -113,8 +113,11 @@
       - name: Set vars
         set_fact:
           streamalert_prod_mods:
-            inputs:
-              - "arn:aws:sns:{{ region }}:{{ account_id }}:{{ sns_input_topic_name }}"
+            modules:
+              streamalert:
+                inputs:
+                  aws-sns:
+                  - "arn:aws:sns:{{ region }}:{{ account_id }}:{{ sns_input_topic_name }}"
       - name: Modify json
         set_fact:
           streamalert_prod_result: "{{ streamalert_prod_imported | combine(streamalert_prod_mods, recursive=True) }}"
@@ -129,7 +132,7 @@
          name: streamalert_sources_imported
       - name: Set vars
         vars: 
-          - topic: "{{ sns_input_topic_name }}"
+          - sns_input_topic_name: "{{ sns_input_topic_name }}"
         set_fact:
           streamalert_sources_mods:
             sns:
