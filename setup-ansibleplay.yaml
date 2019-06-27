@@ -20,7 +20,7 @@
       tags:
         - clone
 
-    - name: Rules Block
+    - name: Rule Creation Block
       tags:
         - rules
       block:
@@ -64,7 +64,7 @@
         - name: Ensure conf file is written
           copy:
             content: "{{ streamalert_global_result | to_nice_json(indent=2) }}"
-            dest: ./streamalert/conf/global.json
+            dest: "{{ playbook_dir }}/streamalert/conf/global.json"
 
     - name: Virtualenv Block
       tags:
@@ -89,6 +89,10 @@
       - buckets
       vars:
         ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
+      vars_prompt:
+      - name: sns_input_topic_name
+        prompt: "Insert SNS Topic Name"
+        private: no
       sns_topic:
         name: "{{ sns_input_topic_name }}"
         region: "{{ region }}"
@@ -141,7 +145,8 @@
     - deploy
   vars:
     ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
-    environment_name: test1
+  vars_prompt:
+    - name: environment_name
   module_defaults:
     command:
       chdir: "{{ playbook_dir }}/streamalert"
