@@ -131,14 +131,17 @@
          file: streamalert/conf/sources.json
          name: streamalert_sources_imported
       - name: Set vars
-        vars: 
-          - sns_input_topic_name: "{{ sns_input_topic_name }}"
+        tags: 
+        - sources
         set_fact:
           streamalert_sources_mods:
-            sns:
-              topic:
-                logs:
-                - "cloudwatch"
+            sns: "{
+              '{{ sns_input_topic_name }}': {
+                'logs': [
+                  'cloudwatch'
+                ]
+              }
+            }"
       - name: Modify json
         set_fact:
           streamalert_sources_result: "{{ streamalert_sources_imported | combine(streamalert_sources_mods, recursive=True) }}"    

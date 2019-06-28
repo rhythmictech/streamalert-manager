@@ -34,3 +34,5 @@ streamalert
 .vscode
 *.exp
 out.txt
+smiller-vars.yml
+hkarumuri-vars.yml
