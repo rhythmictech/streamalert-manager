@@ -115,9 +115,10 @@
           streamalert_prod_mods:
             modules:
               stream_alert:
-                inputs:
-                  aws-sns:
-                  - "arn:aws:sns:{{ region }}:{{ account_id }}:{{ sns_input_topic_name }}"
+                classifier_config:
+                  inputs:
+                    aws-sns:
+                    - "arn:aws:sns:{{ region }}:{{ account_id }}:{{ sns_input_topic_name }}"
       - name: Modify json
         set_fact:
           streamalert_prod_result: "{{ streamalert_prod_imported | combine(streamalert_prod_mods, recursive=True) }}"
@@ -150,10 +151,10 @@
           content: "{{ streamalert_sources_result | to_nice_json(indent=2) }}"
           dest: ./streamalert/conf/sources.json
 
-- name: Deploy Streamalert
+- name: Initialize Streamalert
   hosts: localhost
   tags:
-    - deploy
+    - init
   vars:
     ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
   vars_prompt:
@@ -190,6 +191,30 @@
     shell:
       chdir: "{{ playbook_dir }}/streamalert"
   tasks:
+    - name: Virtualenv Block
+      tags:
+        - dependencies
+        - pip
+        - virtualenv
+      block:
+        - name: Ensure Python requirements are installed
+          pip:
+            requirements: "{{ playbook_dir }}/streamalert/requirements.txt"
+            virtualenv: "{{ venv }}"
+            virtualenv_python: python2.7
+            virtualenv_site_packages: yes
+        - name: Ensure pexpect is in virtual environment
+          pip:
+            name: pexpect
+            virtualenv: "{{ venv }}"
+            virtualenv_python: python2.7
+
+        - name: Ensure venv wrapper is present
+          template:
+            src: templates/venv_exec.j2
+            dest: "{{ venv }}/exec"
+            mode: "755"
+
     - name: Use expect script to setup slack
       tags: 
         - slack      
@@ -201,6 +226,9 @@
           "Please supply the full Slack webhook url, including the secret: " : "{{ webhook }}"  
       #command: "./output.exp"
     - name: Build StreamAlert
-      command: yes yes | ./manage.py build
+      tags:
+        - build
+      shell: yes yes | ./manage.py build
     - name: Deploy StreamAlert
-      command: yes yes | ./mangage.py deploy --function all
+        - build 
+      shell: yes yes | ./mangage.py deploy --function all
