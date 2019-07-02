@@ -1,3 +1,4 @@
 venv: "{{ playbook_dir }}/venv"
 outputs:
-  - "streamalert-testing1"
+  - "slack:streamalert-testing1"
+

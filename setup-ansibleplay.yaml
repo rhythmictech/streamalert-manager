@@ -3,6 +3,15 @@
   hosts: localhost
   vars_files:
     - defaults.yml
+    - global_conf_vars.yaml
+  vars_prompt:
+    - name: account_id
+      prompt: "Enter AWS Account ID:"
+      private: no
+    - name: sns_input_topic_name
+      prompt: "Insert SNS Topic Name"
+      private: no
+
   tasks:
     - name: Clone StreamAlert Repo
       git:
@@ -14,7 +23,7 @@
       tags:
         - clone
 
-    - name: Rules Block
+    - name: Rule Creation Block
       tags:
         - rules
       block:
@@ -41,6 +50,7 @@
           include_vars:
             file: streamalert/conf/global.json
             name: streamalert_global_imported
+
         - name: Set vars
           set_fact:
             streamalert_global_mods:
@@ -48,14 +58,16 @@
                 rule_locations:
                   - rules/rhythmic
               account:
-                aws_account_id: "{{ aws_account_id | quote}}"
+                aws_account_id: "{{ account_id | quote}}"
+
         - name: Modify json
           set_fact:
             streamalert_global_result: "{{ streamalert_global_imported | combine(streamalert_global_mods, recursive=True) }}"
+
         - name: Ensure conf file is written
           copy:
             content: "{{ streamalert_global_result | to_nice_json(indent=2) }}"
-            dest: ./streamalert/conf/global.json
+            dest: "{{ playbook_dir }}/streamalert/conf/global.json"
 
     - name: Virtualenv Block
       tags:
@@ -69,19 +81,86 @@
             virtualenv: "{{ venv }}"
             virtualenv_python: python2.7
             virtualenv_site_packages: yes
+        - name: Ensure pexpect is in virtual environment
+          pip:
+            name: pexpect
+            virtualenv: "{{ venv }}"
+            virtualenv_python: python2.7
+
         - name: Ensure venv wrapper is present
           template:
             src: templates/venv_exec.j2
             dest: "{{ venv }}/exec"
             mode: "755"
 
-- name: Deploy Streamalert
+    - name: Ensure Input SNS Topic is Created
+      tags:
+      - buckets
+      vars:
+        ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
+      sns_topic:
+        name: "{{ sns_input_topic_name }}"
+        region: "{{ region }}"
+
+    - name: Input Configuration
+      tags:
+        - input
+      block:
+      - name: Load prod.json file
+        include_vars: 
+         file: streamalert/conf/clusters/prod.json
+         name: streamalert_prod_imported
+      - name: Set vars
+        set_fact:
+          streamalert_prod_mods:
+            modules:
+              stream_alert:
+                classifier_config:
+                  inputs:
+                    aws-sns:
+                    - "arn:aws:sns:{{ region }}:{{ account_id }}:{{ sns_input_topic_name }}"
+      - name: Modify json
+        set_fact:
+          streamalert_prod_result: "{{ streamalert_prod_imported | combine(streamalert_prod_mods, recursive=True) }}"
+      - name: Ensure conf file is written
+        copy:
+          content: "{{ streamalert_prod_result | to_nice_json(indent=2) }}"
+          dest: ./streamalert/conf/clusters/prod.json      
+
+      - name: Load sources.json
+        include_vars: 
+         file: streamalert/conf/sources.json
+         name: streamalert_sources_imported
+      - name: Set vars
+        tags: 
+        - sources
+        set_fact:
+          streamalert_sources_mods:
+            sns: "{
+              '{{ sns_input_topic_name }}': {
+                'logs': [
+                  'cloudwatch'
+                ]
+              }
+            }"
+      - name: Modify json
+        set_fact:
+          streamalert_sources_result: "{{ streamalert_sources_imported | combine(streamalert_sources_mods, recursive=True) }}"    
+      - name: Ensure conf file is written
+        copy:
+          content: "{{ streamalert_sources_result | to_nice_json(indent=2) }}"
+          dest: ./streamalert/conf/sources.json
+
+- name: Initialize Streamalert
   hosts: localhost
   tags:
-    - deploy
+    - init
   vars:
     ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
-    environment_name: test
+  vars_prompt:
+    - name: environment_name
+      prompt: "Insert name for StreamAlert Prefix"
+      private: no
   module_defaults:
     command:
       chdir: "{{ playbook_dir }}/streamalert"
@@ -90,7 +169,43 @@
   tasks:
     - name: Configure bucket prefix
       command: "./manage.py configure prefix {{ environment_name }}"
+
     - name: initialize
       shell: yes yes | ./manage.py init
       tags:
         - init
+    
+- name: Configure Slack Output
+  hosts: localhost
+  tags:
+    - out
+  vars: 
+    ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
+  vars_prompt: 
+        - name: webhook
+          prompt: "Insert Slack webhook url (inluding the secret): "
+          private: no
+  module_defaults:
+    command:
+      chdir: "{{ playbook_dir }}/streamalert"
+    shell:
+      chdir: "{{ playbook_dir }}/streamalert"
+  tasks:
+    - name: Use expect script to setup slack
+      tags: 
+        - slack      
+      expect:
+        chdir: "{{ playbook_dir }}/streamalert"
+        command: "./manage.py output slack"
+        responses:
+          "Please supply a short and unique descriptor for this Slack integration" : "streamalert-testing1"
+          "Please supply the full Slack webhook url, including the secret: " : "{{ webhook }}"  
+      #command: "./output.exp"
+    - name: Build StreamAlert
+      tags:
+        - build
+      shell: yes yes | ./manage.py build
+    - name: Deploy StreamAlert
+      tags:
+        - build 
+      shell: yes yes | ./mangage.py deploy --function all

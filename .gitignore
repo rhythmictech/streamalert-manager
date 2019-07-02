@@ -26,8 +26,13 @@ terminal.glue
 # virtualenv files
 venv/
 
+# other
 .vagrant/
 htmlcov/
 streamalert
 *.retry
 .vscode
+*.exp
+out.txt
+smiller-vars.yml
+
