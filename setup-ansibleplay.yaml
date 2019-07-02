@@ -114,7 +114,7 @@
         set_fact:
           streamalert_prod_mods:
             modules:
-              streamalert:
+              stream_alert:
                 inputs:
                   aws-sns:
                   - "arn:aws:sns:{{ region }}:{{ account_id }}:{{ sns_input_topic_name }}"
@@ -124,7 +124,7 @@
       - name: Ensure conf file is written
         copy:
           content: "{{ streamalert_prod_result | to_nice_json(indent=2) }}"
-          dest: ./streamalert/conf/prod.json      
+          dest: ./streamalert/conf/clusters/prod.json      
 
       - name: Load sources.json
         include_vars: 
