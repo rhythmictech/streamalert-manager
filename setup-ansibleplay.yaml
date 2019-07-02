@@ -191,30 +191,6 @@
     shell:
       chdir: "{{ playbook_dir }}/streamalert"
   tasks:
-    - name: Virtualenv Block
-      tags:
-        - dependencies
-        - pip
-        - virtualenv
-      block:
-        - name: Ensure Python requirements are installed
-          pip:
-            requirements: "{{ playbook_dir }}/streamalert/requirements.txt"
-            virtualenv: "{{ venv }}"
-            virtualenv_python: python2.7
-            virtualenv_site_packages: yes
-        - name: Ensure pexpect is in virtual environment
-          pip:
-            name: pexpect
-            virtualenv: "{{ venv }}"
-            virtualenv_python: python2.7
-
-        - name: Ensure venv wrapper is present
-          template:
-            src: templates/venv_exec.j2
-            dest: "{{ venv }}/exec"
-            mode: "755"
-
     - name: Use expect script to setup slack
       tags: 
         - slack      
@@ -230,5 +206,6 @@
         - build
       shell: yes yes | ./manage.py build
     - name: Deploy StreamAlert
+      tags:
         - build 
       shell: yes yes | ./mangage.py deploy --function all
