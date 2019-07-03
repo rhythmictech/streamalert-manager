@@ -16,7 +16,7 @@
     - name: Clone StreamAlert Repo
       git:
         dest: "{{ playbook_dir }}/streamalert"
-        repo: https://github.com/airbnb/streamalert.git
+        repo: https://github.com/rhythmictech/streamalert.git
         version: stable
         force: no
         update: no
@@ -184,7 +184,7 @@
   vars_prompt: 
         - name: webhook
           prompt: "Insert Slack webhook url (inluding the secret): "
-          private: no
+          private: yes
   module_defaults:
     command:
       chdir: "{{ playbook_dir }}/streamalert"
@@ -208,4 +208,4 @@
     - name: Deploy StreamAlert
       tags:
         - build 
-      shell: yes yes | ./mangage.py deploy --function all
+      shell: yes yes | ./manage.py deploy --function all
