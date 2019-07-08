@@ -1,0 +1,3 @@
+account_id: #id number
+sns_input_topic_name: #sns topic name
+environment_name: #bucket prefix name
