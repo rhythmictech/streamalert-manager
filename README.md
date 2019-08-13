@@ -32,9 +32,11 @@ _The first playbook: "Configure StreamAlert Files"_
 6. *Input configuration:* This portion modifies conf/sources.json in order to have cloudwatch feed into StreamAlert
 
 _The second playbook: "Initialize StreamAlert"_
+
 This one is more straightforward, it will run ```./manage.py configure prefix``` and ```./manage.py init```
 
 _The third playbook: "Configure Slack Output"_
+
 Takes in the slack secret webhook, ansible is set to the default environments to be in the StreamAlert local repository. Will run ```./manage.py build``` and ```./manage.py deploy --function all```
 
 
