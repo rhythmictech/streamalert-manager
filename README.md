@@ -39,5 +39,6 @@ __*The third playbook: "Configure Slack Output"*__
 
 Takes in the slack secret webhook, ansible is set to the default environments to be in the StreamAlert local repository. Will run ```./manage.py build``` and ```./manage.py deploy --function all```
 
-
-
+## Where to go from here
+- Rules and rule templates are in a rudimentary state.
+- The only templated fact is the slack output which will be configured as streamalert-testing1 to be a proof-of-concept. For that reason, the playbook will setup the slack topic to as streamalert-testing1.
