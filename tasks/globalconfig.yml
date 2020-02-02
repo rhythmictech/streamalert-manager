@@ -1,0 +1,25 @@
+- name: Load config from file
+  include_vars:
+    file: streamalert/conf/global.json
+    name: streamalert_global_imported
+
+- name: Set vars
+  set_fact:
+    streamalert_global_mods:
+      general:
+        rule_locations:
+          - rules/{{ active_rules_dir }}
+      account:
+        aws_account_id: "{{ account_id | quote}}"
+      infrastructure:
+        classifier_sqs: 
+          use_prefix: True
+
+- name: Modify json
+  set_fact:
+    streamalert_global_result: "{{ streamalert_global_imported | combine(streamalert_global_mods, recursive=True) }}"
+
+- name: Ensure conf file is written
+  copy:
+    content: "{{ streamalert_global_result | to_nice_json(indent=2) }}"
+    dest: "{{ playbook_dir }}/streamalert/conf/global.json"

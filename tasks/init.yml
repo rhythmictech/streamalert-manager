@@ -1,0 +1,6 @@
+- name: Configure bucket prefix
+  command: "./manage.py configure prefix {{ environment_name }}"
+
+- name: initialize
+  shell: yes yes | ./manage.py init
+  

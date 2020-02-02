@@ -1,6 +1,10 @@
 # streamalert-manager
 
-This project will automate the StreamAlert setup process. 
+[StreamAlert](https://github.com/airbnb/streamalert) is a super cool realtime event monitoring system. Unfortunately, using it requires your configuration to live in the repo alongside the code, which can create some difficulty when trying to manage a customized ruleset/config while also staying up to date with the upstream StreamAlert project. 
+
+This project eases some of the difficulties that can cause by automating the setup process and decoupling (some) configuration from the code. 
+
+*Warning*: Releases after v0.1.0 are targeted against the StreamAlert `release-3-0-0` branch, which is based on Python 3.x/Terraform 0.12 and changes the placement of many configuration objects.
 
 ## Requirements
 
@@ -8,13 +12,13 @@ Have awscli configured with admin role using `aws configure.` In addition, have 
 
 ## How to use
 
-Run the ansible playbook using ```ansible-playbook setup.yaml``` Give the information prompted. Alternatively, fill in the infomration in the ```vars.yml``` and run ```ansible-playbook setup.yaml -e vars.yml```
+Update values in `vars.yml` (or create a new var file). Run ```ansible-playbook setup.yml -e @vars.yml```
 
 ## Current condition/Notes:
 
-Rule templates will be in the templates/rules folder. The only templated fact is the slack output which will be configured as streamalert-testing1. For that reason, the playbook will setup the slack topic to as streamalert-testing1. 
+Rule templates will be in the templates/rules folder. The only templated fact is the slack output which will be configured as streamalert-testing1. For that reason, the playbook will setup the slack topic to as streamalert-testing1. StreamAlert automatically creates output SNS topics by default.
 
-The project is still in the proof-of-concept phase so the rules and templating will be developed further
+Running with `load_sample_config: true` will cause changes to be made to your cluster configuration. It is recommended to disable this when using this project to manage a running StreamAlert cluster.
 
 ## Build Notes
 
@@ -22,7 +26,7 @@ Here's how this thing works:
 
 __*The first playbook: "Configure StreamAlert Files"*__
 1. *Clone Streamalert Repo:* Clone the repo
-2. *Rule Creation Block:* Takes the rule templates and uses the var files to turn them into python rules. These are placed in rules/rhythmic directory in the streamalert repo
+2. *Rule Creation Block:* Takes the rule templates and uses the var files to turn them into python rules. These are placed in rules/custom directory in the streamalert repo
 3. *Config Block:* This will equate to ```./manage.py configure aws_account_id ACCOUNT_ID``` The global config files are modifired through the following process:
 - Load the configs as the json files
 - create a json sub-object to fill for the information (in this case, the account ID)

@@ -1,4 +1,25 @@
+########################################
+# General
+########################################
+
+# Repo to target
+streamalert_repo: https://github.com/airbnb/streamalert.git
+# Refspec to clone
+streamalert_version: "stable"
+
+# Name of directory where active rules will be placed
+active_rules_dir: "active"
+
+# shouldn't need to change this
 venv: "{{ playbook_dir }}/venv"
+
+########################################
+# Sample Configuration Vars
+########################################
+
+# Whether to load a sample config that creates an SNS topic
+# and sends matching alerts to Slack
+load_sample_config: true
+
 outputs:
   - "slack:streamalert-testing1"
-

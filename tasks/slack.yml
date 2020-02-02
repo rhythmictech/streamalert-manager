@@ -1,0 +1,18 @@
+- name: Use expect script to setup slack
+  tags: 
+    - slack      
+  expect:
+    chdir: "{{ playbook_dir }}/streamalert"
+    command: "./manage.py output slack"
+    responses:
+      "Please supply a short and unique descriptor for this Slack integration" : "streamalert-testing1"
+      "Please supply the full Slack webhook url, including the secret: " : "{{ slack_webhook }}"  
+  #command: "./output.exp"
+- name: Build StreamAlert
+  tags:
+    - build
+  shell: yes yes | ./manage.py build
+- name: Deploy StreamAlert
+  tags:
+    - build 
+  shell: yes yes | ./manage.py deploy --function all

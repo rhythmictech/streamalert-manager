@@ -1,0 +1,93 @@
+---
+- name: "Configure StreamAlert files"
+  hosts: localhost
+  vars_files:
+    - defaults.yml
+    - global_conf_vars.yml
+  tasks:
+    - name: Ensure needed vars are provided
+      assert:
+        that:
+          - account_id is defined
+          - environment_name is defined
+          - slack_webhook is defined or not load_sample_config|bool
+          - sns_input_topic_name is defined or not load_sample_config|bool
+    - name: Clone StreamAlert Repo
+      git:
+        dest: "{{ playbook_dir }}/streamalert"
+        repo: "{{ streamalert_repo }}"
+        version: "{{ streamalert_version }}"
+        force: no
+        update: no
+      tags: ['clone']
+
+    - name: Configure active rules
+      import_tasks: tasks/rules.yml
+      tags: ['rules']
+
+    - name: Configure StreamAlert
+      import_tasks: tasks/globalconfig.yml
+      tags: ['config']
+
+    - name: Configure virtual env
+      import_tasks: tasks/venv.yml
+      tags: ['dependencies', 'pip', 'virtualenv']
+
+    - name: Load sample configuration
+      import_tasks: "tasks/sampleconfig.yml"
+      when: load_sample_config|bool
+      tags: ['dependencies', 'config']
+
+- name: Initialize Streamalert
+  hosts: localhost
+  vars:
+    ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
+  vars_prompt:
+    - name: environment_name
+      prompt: "Insert name for StreamAlert Prefix"
+      private: no
+  module_defaults:
+    command:
+      chdir: "{{ playbook_dir }}/streamalert"
+    shell:
+      chdir: "{{ playbook_dir }}/streamalert"
+  tasks:
+    - import_tasks: "tasks/init.yml"
+  tags: ['init']
+
+    
+- name: Configure Slack Output
+  hosts: localhost
+  vars: 
+    ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
+  module_defaults:
+    command:
+      chdir: "{{ playbook_dir }}/streamalert"
+    shell:
+      chdir: "{{ playbook_dir }}/streamalert"
+  tasks:
+    - import_tasks: "tasks/slack.yml"
+      when: load_sample_config|bool
+  tags: ['slack']
+
+- name: Deploy Streamalert
+  hosts: localhost
+  vars:
+    ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
+  vars_prompt:
+    - name: environment_name
+      prompt: "Insert name for StreamAlert Prefix"
+      private: no
+  module_defaults:
+    command:
+      chdir: "{{ playbook_dir }}/streamalert"
+    shell:
+      chdir: "{{ playbook_dir }}/streamalert"
+  tasks:
+    - name: Build StreamAlert
+      shell: yes yes | ./manage.py build
+      tags: ['build']
+
+    - name: Deploy StreamAlert
+      shell: yes yes | ./manage.py deploy --function all
+      tags: ['build']

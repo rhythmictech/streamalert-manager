@@ -1,3 +1,4 @@
-account_id: #id number
-sns_input_topic_name: #sns topic name
-environment_name: #bucket prefix name
+account_id: 012345678901
+environment_name: "demo"
+sns_input_topic_name: "StreamAlertTopic"
+streamalert_version: "release-3-0-0"

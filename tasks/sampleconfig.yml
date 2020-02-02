@@ -1,0 +1,45 @@
+- name: Ensure Input SNS Topic is Created
+  tags:
+  - buckets
+  vars:
+    ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
+  sns_topic:
+    name: "{{ sns_input_topic_name }}"
+    region: "{{ region }}"
+  when: configure_sample_config
+
+- name: Input Configuration
+  tags:
+    - input
+  when: configure_sample_config
+  block:
+  - name: Load prod.json file
+    include_vars: 
+      file: streamalert/conf/clusters/prod.json
+      name: streamalert_prod_imported
+  - name: Set vars
+    set_fact:
+      streamalert_prod_mods:
+        data_sources:
+          sns: "{
+            '{{ sns_input_topic_name }}': {
+              'logs': [
+                'cloudwatch'
+              ]
+            }
+          }"
+        modules:
+          streamalert:
+            classifier_config:
+              inputs:
+                aws-sns:
+                - "arn:aws:sns:{{ region }}:{{ account_id }}:{{ sns_input_topic_name }}"
+
+  - name: Modify json
+    set_fact:
+      streamalert_prod_result: "{{ streamalert_prod_imported | combine(streamalert_prod_mods, recursive=True) }}"
+      
+  - name: Ensure conf file is written
+    copy:
+      content: "{{ streamalert_prod_result | to_nice_json(indent=2) }}"
+      dest: ./streamalert/conf/clusters/prod.json  
