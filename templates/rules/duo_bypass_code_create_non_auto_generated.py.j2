@@ -4,8 +4,8 @@ from stream_alert.shared.rule import rule
 
 
 @rule(
-    logs=['duo:administrator'], 
-    outputs={{ outputs }} 
+    logs=['duo:administrator'],
+    outputs={{ outputs }}
 )
 def duo_bypass_code_create_non_auto_generated(rec):
     """

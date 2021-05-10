@@ -14,7 +14,7 @@
   when: configure_sample_config
   block:
   - name: Load prod.json file
-    include_vars: 
+    include_vars:
       file: streamalert/conf/clusters/prod.json
       name: streamalert_prod_imported
   - name: Set vars
@@ -38,8 +38,8 @@
   - name: Modify json
     set_fact:
       streamalert_prod_result: "{{ streamalert_prod_imported | combine(streamalert_prod_mods, recursive=True) }}"
-      
+
   - name: Ensure conf file is written
     copy:
       content: "{{ streamalert_prod_result | to_nice_json(indent=2) }}"
-      dest: ./streamalert/conf/clusters/prod.json  
+      dest: ./streamalert/conf/clusters/prod.json

@@ -12,7 +12,7 @@
       account:
         aws_account_id: "{{ account_id | quote}}"
       infrastructure:
-        classifier_sqs: 
+        classifier_sqs:
           use_prefix: True
 
 - name: Modify json
