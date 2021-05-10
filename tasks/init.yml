@@ -3,4 +3,4 @@
 
 - name: initialize
   shell: yes yes | ./manage.py init
-  
+

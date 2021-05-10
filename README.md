@@ -1,8 +1,8 @@
 # streamalert-manager
 
-[StreamAlert](https://github.com/airbnb/streamalert) is a super cool realtime event monitoring system. Unfortunately, using it requires your configuration to live in the repo alongside the code, which can create some difficulty when trying to manage a customized ruleset/config while also staying up to date with the upstream StreamAlert project. 
+[StreamAlert](https://github.com/airbnb/streamalert) is a super cool realtime event monitoring system. Unfortunately, using it requires your configuration to live in the repo alongside the code, which can create some difficulty when trying to manage a customized ruleset/config while also staying up to date with the upstream StreamAlert project.
 
-This project eases some of the difficulties that can cause by automating the setup process and decoupling (some) configuration from the code. 
+This project eases some of the difficulties that can cause by automating the setup process and decoupling (some) configuration from the code.
 
 *Warning*: Releases after v0.1.0 are targeted against the StreamAlert `release-3-0-0` branch, which is based on Python 3.x/Terraform 0.12 and changes the placement of many configuration objects.
 
@@ -22,7 +22,7 @@ Running with `load_sample_config: true` will cause changes to be made to your cl
 
 ## Build Notes
 
-Here's how this thing works: 
+Here's how this thing works:
 
 __*The first playbook: "Configure StreamAlert Files"*__
 1. *Clone Streamalert Repo:* Clone the repo
@@ -31,7 +31,7 @@ __*The first playbook: "Configure StreamAlert Files"*__
 - Load the configs as the json files
 - create a json sub-object to fill for the information (in this case, the account ID)
 - Merge the json to the config to created a correctly modified config file.
-4. *Virtualenv block:* This sets up the virtual environment installed with the required tools for this setup. 
+4. *Virtualenv block:* This sets up the virtual environment installed with the required tools for this setup.
 5. *Create SNS Input Topic:* This will modify conf/clusters/prod.json to configure an input SNS Topic. Modification happens similar to the way it happens in step 3.
 6. *Input configuration:* This portion modifies conf/sources.json in order to have cloudwatch feed into StreamAlert
 
