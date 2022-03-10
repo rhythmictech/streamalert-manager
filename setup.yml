@@ -55,10 +55,10 @@
     - import_tasks: "tasks/init.yml"
   tags: ['init']
 
-    
+
 - name: Configure Slack Output
   hosts: localhost
-  vars: 
+  vars:
     ansible_python_interpreter: "{{ playbook_dir }}/venv/exec"
   module_defaults:
     command:
